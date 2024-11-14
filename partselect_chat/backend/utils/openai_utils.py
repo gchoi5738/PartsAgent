@@ -1,6 +1,6 @@
 from typing import List, Dict
-from langchain.prompts import PromptTemplate
-from langchain.output_parsers import PydanticOutputParser
+from langchain_core.prompts import PromptTemplate  # Updated import
+from langchain_core.output_parsers import PydanticOutputParser  # Updated import
 from pydantic import BaseModel, Field
 
 
