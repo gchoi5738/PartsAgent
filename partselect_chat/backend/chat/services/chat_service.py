@@ -48,6 +48,7 @@ class ChatService:
           context_msg += f"- {product['name']} (Part #{product['part_number']})\n"
           context_msg += f"  Price: ${product['price']}\n"
           context_msg += f"  Description: {product['description']}\n"
+          context_msg += f"  Stock Quantity: {product['stock_quantity']}\n"
           context_msg += f"  Compatible Models:\n"
           for model in product['compatibility_info']:
             context_msg += f"    - {model['model_number']} ({model['brand']})\n"

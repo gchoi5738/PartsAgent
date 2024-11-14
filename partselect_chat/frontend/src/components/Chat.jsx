@@ -9,6 +9,7 @@ const Chat = () => {
 
     // Add user message to the chat
     setMessages((prevMessages) => [...prevMessages, { sender: 'user', content: inputValue }]);
+    setInputValue('');
 
     try {
       const response = await fetch('http://localhost:8000/api/chat/', {
@@ -26,13 +27,12 @@ const Chat = () => {
       const data = await response.json();
       // Add bot response to the chat
       setMessages((prevMessages) => [...prevMessages, { sender: 'bot', content: data.response }]);
+
+      // Clear input field
     } catch (error) {
       console.error('Error sending message:', error);
       setMessages((prevMessages) => [...prevMessages, { sender: 'bot', content: 'An error occurred. Please try again.' }]);
     }
-
-    // Clear input field
-    setInputValue('');
   };
 
   return (

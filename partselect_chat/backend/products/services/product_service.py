@@ -57,7 +57,8 @@ class ProductService:
               'price': p.price,
               'appliance_type': p.appliance_type,
               'similarity_score': float(p.distance),
-              'installation_guide': installation_guide_map.get(p.id, None)
+              'installation_guide': installation_guide_map.get(p.id, None),
+              'stock_quantity': p.stock_quantity,
           }
           for p in products
       ]

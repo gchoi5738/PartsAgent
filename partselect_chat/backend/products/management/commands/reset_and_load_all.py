@@ -132,34 +132,35 @@ class Command(BaseCommand):
           # Create installation guide
           guide_content = f"""Installation Guide for {product.part_number} {product.name}
 
-Safety First:
-- Unplug refrigerator before installing
-- Read all instructions carefully
-- Wear protective gloves if necessary
+Safety First:\n
+- Unplug refrigerator before installing\n
+- Read all instructions carefully\n
+- Wear protective gloves if necessary\n
 
-Tools Required:
-- Phillips head screwdriver
-- Adjustable wrench
-- Work gloves
+Tools Required:\n
+- Phillips head screwdriver\n
+- Adjustable wrench\n
+- Work gloves\n
 
 Installation Steps:
-1. Preparation
-   - Remove old {product.name.lower()} if replacing
-   - Clean installation area
-   - Gather all necessary tools
+\n
+1. Preparation:\n
+   - Remove old {product.name.lower()} if replacing\n
+   - Clean installation area\n
+   - Gather all necessary tools\n
 
-2. Installation Process
-   - Carefully remove packaging
-   - Follow model-specific instructions
-   - Verify all connections
+2. Installation Process:\n
+   - Carefully remove packaging\n
+   - Follow model-specific instructions\n
+   - Verify all connections\n
 
-3. Testing
-   - Restore power
-   - Test operation
-   - Check for proper function
+3. Testing:\n
+   - Restore power\n
+   - Test operation\n
+   - Check for proper function\n
 
-For technical support: 1-800-PARTSELECT"""
-
+For technical support: 1-800-PARTSELECT
+"""
           await sync_to_async(InstallationGuide.objects.create)(
               product=product,
               content=guide_content
@@ -200,31 +201,31 @@ For technical support: 1-800-PARTSELECT"""
           # Create installation guide
           guide_content = f"""Installation Guide for {product.part_number} {product.name}
 
-Safety First:
-- Disconnect power
-- Shut off water supply if applicable
-- Read all instructions
+Safety First:\n
+- Disconnect power\n
+- Shut off water supply if applicable\n
+- Read all instructions\n
 
-Tools Required:
-- Screwdriver set
-- Adjustable wrench
-- Work gloves
+Tools Required:\n
+- Screwdriver set\n
+- Adjustable wrench\n
+- Work gloves\n
 
-Installation Steps:
-1. Preparation
-   - Remove access panels
-   - Document wire connections
-   - Take photos for reference
+Installation Steps:\n
+1. Preparation\n
+   - Remove access panels\n
+   - Document wire connections\n
+   - Take photos for reference\n
 
-2. Installation
-   - Follow model-specific instructions
-   - Verify connections
-   - Secure all components
+2. Installation\n
+   - Follow model-specific instructions\n
+   - Verify connections\n
+   - Secure all components\n
 
-3. Testing
-   - Restore power
-   - Run test cycle
-   - Check for proper operation
+3. Testing\n
+   - Restore power\n
+   - Run test cycle\n
+   - Check for proper operation\n
 
 For installation support: 1-800-PARTSELECT"""
 
