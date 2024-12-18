@@ -3,7 +3,7 @@ from langchain_openai import OpenAIEmbeddings
 from django.conf import settings
 from asgiref.sync import sync_to_async
 from pgvector.django import L2Distance
-
+import re
 from ..models import Product, ProductDocument, InstallationGuide, ModelCompatibility
 
 
@@ -21,12 +21,32 @@ class ProductService:
       similarity_threshold: float = 0.7
   ) -> List[Dict]:
     try:
-      # Structure query to emphasize part numbers if present
-      import re
+        # Check for part number first
       part_number_match = re.search(r'[A-Z]+\d{4,}[A-Z]*', query.upper())
-      if part_number_match:
-        query = f"PART_NUMBER: {part_number_match.group()}"
 
+      if part_number_match:
+        # Direct database lookup path
+        part_number = part_number_match.group()
+        product = await sync_to_async(Product.objects.filter(part_number=part_number).first)()
+
+        if product:
+          installation_guide = await sync_to_async(
+              InstallationGuide.objects.filter(product_id=product.id).first
+          )()
+
+          return [{
+              'id': product.id,
+              'part_number': product.part_number,
+              'name': product.name,
+              'description': product.description,
+              'price': product.price,
+              'appliance_type': product.appliance_type,
+              'similarity_score': 1.0,  # Exact match
+              'installation_guide': installation_guide.content if installation_guide else None,
+              'stock_quantity': product.stock_quantity,
+          }]
+
+      # If no part number match or no product found, fall back to semantic search
       query_embedding = await self.embeddings.aembed_query(query)
 
       queryset = Product.objects.annotate(

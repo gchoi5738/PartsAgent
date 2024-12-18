@@ -37,7 +37,9 @@ class ChatService:
                 1. Help customers find the right parts
                 2. Explain installation procedures
                 3. Check compatibility
-                4. Provide troubleshooting guidance""")
+                4. Provide troubleshooting guidance
+                Please don't make up any information, only use the data provided to you.
+                        """)
       ]
 
       # Add context

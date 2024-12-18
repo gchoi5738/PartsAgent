@@ -5,12 +5,20 @@ from products.services.product_service import ProductService
 import random
 import asyncio
 from asgiref.sync import sync_to_async
+from faker import Faker
+import json
 
 
 class Command(BaseCommand):
-  help = 'Reset and load all product data with embeddings'
+  help = 'Generate large dataset of realistic appliance parts'
 
   def add_arguments(self, parser):
+    parser.add_argument(
+        '--count',
+        type=int,
+        default=300,
+        help='Number of products to generate'
+    )
     parser.add_argument(
         '--no-embeddings',
         action='store_true',
@@ -18,175 +26,156 @@ class Command(BaseCommand):
     )
 
   def handle(self, *args, **options):
+    fake = Faker()
     service = ProductService()
 
-    refrigerator_parts = [
-        {
-            'part_number': 'W10295370A',
-            'name': 'Refrigerator Water Filter',
-            'description': 'EveryDrop Filter 1 (EDR1RXD1). Reduces contaminants, including lead, mercury, pesticides, pharmaceuticals. For Whirlpool, Maytag, Amana, KitchenAid, and JennAir side-by-side and bottom-freezer refrigerators.',
-            'price': 49.99
+    # Component types and their descriptions
+    REFRIGERATOR_COMPONENTS = {
+        'FILTER': {
+            'names': ['Water Filter', 'Air Filter', 'Carbon Filter'],
+            'desc_template': 'High-quality {} designed to remove contaminants and improve {} quality. {} filtration technology with {} month lifespan.',
+            'price_range': (30, 80)
         },
-        {
-            'part_number': 'W10190965',
-            'name': 'Refrigerator Ice Maker Assembly',
-            'description': 'Original Whirlpool ice maker assembly. Includes motor, ejector blade, and electrical harness. Produces 8 ice cubes per cycle, up to 120 cubes per day.',
-            'price': 169.99
+        'MOTOR': {
+            'names': ['Evaporator Fan Motor', 'Condenser Fan Motor', 'Ice Maker Motor'],
+            'desc_template': 'Reliable {} rated for {} RPM. Energy-efficient design with {} bearings and {} protection.',
+            'price_range': (120, 250)
         },
-        {
-            'part_number': 'WP2198597',
-            'name': 'Thermostat Control Board',
-            'description': 'Electronic control board that regulates temperature and defrost cycles. Compatible with multiple Whirlpool and Kenmore models. Includes installation hardware.',
-            'price': 225.99
+        'BOARD': {
+            'names': ['Control Board', 'Display Board', 'Power Board'],
+            'desc_template': 'Electronic {} with {} microprocessor. Controls {} functions with {} protection features.',
+            'price_range': (150, 400)
         },
-        {
-            'part_number': 'W10518394',
-            'name': 'Defrost Heater Assembly',
-            'description': 'Heating element for automatic defrost system. 120V, 250W. Prevents ice buildup on evaporator coils. Includes thermal fuse for safety.',
-            'price': 84.99
-        },
-        {
-            'part_number': 'W10312695',
-            'name': 'Temperature Sensor',
-            'description': 'Precision thermistor for accurate temperature monitoring. 10K ohm resistance at 25°C. Used in fresh food and freezer compartments.',
-            'price': 35.99
+        'SENSOR': {
+            'names': ['Temperature Sensor', 'Defrost Sensor', 'Door Sensor'],
+            'desc_template': 'Precision {} with {} accuracy. Monitors {} with {} response time.',
+            'price_range': (20, 100)
         }
-    ]
+    }
 
-    dishwasher_parts = [
-        {
-            'part_number': 'W10350375',
-            'name': 'Dishwasher Control Board',
-            'description': 'Main electronic control board for dishwasher functions. Controls wash cycles, water temperature, and all electronic operations. Includes mounting hardware and wire harness.',
-            'price': 189.99
+    DISHWASHER_COMPONENTS = {
+        'PUMP': {
+            'names': ['Drain Pump', 'Circulation Pump', 'Wash Pump'],
+            'desc_template': 'Heavy-duty {} with {} GPM flow rate. {} impeller design for {} performance.',
+            'price_range': (100, 300)
         },
-        {
-            'part_number': 'W10300024',
-            'name': 'Spray Arm Assembly',
-            'description': 'Upper spray arm with multiple water jets for thorough cleaning coverage. Includes mounting hub and water flow directors. Self-cleaning nozzles prevent clogging.',
-            'price': 65.99
+        'SPRAY': {
+            'names': ['Upper Spray Arm', 'Lower Spray Arm', 'Middle Spray Arm'],
+            'desc_template': 'Advanced {} with {} spray jets. Provides {} coverage with {} cleaning action.',
+            'price_range': (40, 120)
         },
-        {
-            'part_number': 'W10195416',
-            'name': 'Door Latch Assembly',
-            'description': 'Complete door latch mechanism with safety switch. Includes strike plate and electrical contacts. Prevents operation when door is open.',
-            'price': 89.99
+        'HEATER': {
+            'names': ['Heating Element', 'Water Heater', 'Drying Element'],
+            'desc_template': '{} rated at {} watts. Ensures {} temperature for {} cleaning.',
+            'price_range': (60, 150)
         },
-        {
-            'part_number': 'W10195417',
-            'name': 'Circulation Pump Motor',
-            'description': 'Main circulation pump motor assembly. 120V, 60Hz motor with built-in thermal protection. Includes mounting gaskets and hardware.',
-            'price': 145.99
-        },
-        {
-            'part_number': 'W10482550',
-            'name': 'Heating Element',
-            'description': 'Water heating element for wash and dry cycles. 1200W heating capacity. Includes mounting brackets and high-temperature wiring.',
-            'price': 79.99
+        'RACK': {
+            'names': ['Upper Rack', 'Lower Rack', 'Cutlery Basket'],
+            'desc_template': 'Durable {} with {} coating. Features {} adjustable positions and {} capacity.',
+            'price_range': (80, 200)
         }
-    ]
+    }
 
-    # Model compatibility data
-    refrigerator_models = [
-        'WRF535SMHZ', 'WRX735SDHZ', 'WRF767SDHZ', 'WRF757SDHZ',
-        'MFI2570FEZ', 'MSS25N4MKZ', 'MFI2269FRZ', 'MFF2558FEZ'
-    ]
+    # Brand and model information
+    BRANDS = {
+        'Whirlpool': {'prefix': 'W', 'models_prefix': 'WDT'},
+        'Maytag': {'prefix': 'M', 'models_prefix': 'MDB'},
+        'KitchenAid': {'prefix': 'K', 'models_prefix': 'KDT'},
+        'Amana': {'prefix': 'A', 'models_prefix': 'ADB'}
+    }
 
-    dishwasher_models = [
-        'WDF520PADM', 'WDT730PAHZ', 'WDT750SAHZ', 'WDT970SAHZ',
-        'MDB8959SKZ', 'MDB7959SKZ', 'MDB8979SFZ', 'MDB7979SHZ'
-    ]
+    def generate_part_number(brand_prefix, component_type):
+      return f"{brand_prefix}P{random.randint(10000, 99999)}{component_type[:2].upper()}"
 
-    async def reset_and_load():
-      try:
-        # Clear existing data
-        self.stdout.write('Clearing existing data...')
-        await sync_to_async(ModelCompatibility.objects.all().delete)()
-        await sync_to_async(InstallationGuide.objects.all().delete)()
-        await sync_to_async(ProductDocument.objects.all().delete)()
-        await sync_to_async(Product.objects.all().delete)()
+    def generate_model_number(brand_prefix):
+      return f"{brand_prefix}{random.randint(100, 999)}SAHZ"
 
-        # Create refrigerator parts
-        for part_data in refrigerator_parts:
-          self.stdout.write(f"Creating refrigerator part {part_data['part_number']}...")
+    def generate_installation_guide(product, component_type):
+      tools = ['Phillips screwdriver', 'Flathead screwdriver', 'Adjustable wrench',
+               'Pliers', 'Socket set', 'Multimeter', 'Wire strippers']
+      safety_steps = ['Disconnect power', 'Wear safety glasses', 'Use insulated tools',
+                      'Remove jewelry', 'Wear work gloves', 'Ensure proper ventilation']
 
-          # Create product
-          product = await sync_to_async(Product.objects.create)(
-              part_number=part_data['part_number'],
-              name=part_data['name'],
-              description=part_data['description'],
-              appliance_type='REFRIGERATOR',
-              price=part_data['price'],
-              stock_quantity=random.randint(10, 50)
-          )
+      return f"""Installation Guide for {product.part_number} {product.name}
 
-          if not options['no_embeddings']:
-            # Create embedding
-            text = product.get_document_text()
-            embedding = await service.embeddings.aembed_query(text)
-            await sync_to_async(ProductDocument.objects.create)(
-                product=product,
-                embedding=embedding
-            )
+Safety Instructions:
+{chr(10).join(f'- {step}' for step in random.sample(safety_steps, 3))}
 
-          # Create installation guide
-          guide_content = f"""Installation Guide for {product.part_number} {product.name}
-
-Safety First:\n
-- Unplug refrigerator before installing\n
-- Read all instructions carefully\n
-- Wear protective gloves if necessary\n
-
-Tools Required:\n
-- Phillips head screwdriver\n
-- Adjustable wrench\n
-- Work gloves\n
+Tools Required:
+{chr(10).join(f'- {tool}' for tool in random.sample(tools, 3))}
 
 Installation Steps:
-\n
-1. Preparation:\n
-   - Remove old {product.name.lower()} if replacing\n
-   - Clean installation area\n
-   - Gather all necessary tools\n
 
-2. Installation Process:\n
-   - Carefully remove packaging\n
-   - Follow model-specific instructions\n
-   - Verify all connections\n
+1. Preparation:
+   - Document current installation
+   - Gather required tools
+   - Clear work area
+   - Verify replacement part
 
-3. Testing:\n
-   - Restore power\n
-   - Test operation\n
-   - Check for proper function\n
+2. Removal:
+   - Follow safety procedures
+   - Remove access panels
+   - Disconnect electrical connections
+   - Remove old component
 
-For technical support: 1-800-PARTSELECT
-"""
-          await sync_to_async(InstallationGuide.objects.create)(
-              product=product,
-              content=guide_content
-          )
+3. Installation:
+   - Verify compatibility
+   - Position new {product.name}
+   - Secure mounting points
+   - Reconnect electrical connections
 
-          # Create compatibility entries
-          for model in random.sample(refrigerator_models, 3):
-            await sync_to_async(ModelCompatibility.objects.create)(
-                product=product,
-                model_number=model,
-                brand='Whirlpool' if model.startswith('W') else 'Maytag',
-                notes=f'Compatible with {model}'
-            )
+4. Testing:
+   - Restore power
+   - Verify operation
+   - Check for proper function
+   - Test all modes
 
-        # Create dishwasher parts
-        for part_data in dishwasher_parts:
-          self.stdout.write(f"Creating dishwasher part {part_data['part_number']}...")
+Troubleshooting Tips:
+- Verify all connections are secure
+- Check for proper alignment
+- Ensure no wires are pinched
+- Confirm proper voltage
+
+For technical support: 1-800-PARTSELECT"""
+
+    async def generate_products(count):
+      try:
+        # Generate products
+        for i in range(count):
+          # Alternate between refrigerator and dishwasher
+          is_refrigerator = i % 2 == 0
+
+          # Select component type and details
+          component_dict = REFRIGERATOR_COMPONENTS if is_refrigerator else DISHWASHER_COMPONENTS
+          component_type = random.choice(list(component_dict.keys()))
+          component_details = component_dict[component_type]
+
+          # Select brand and generate numbers
+          brand_name = random.choice(list(BRANDS.keys()))
+          brand_info = BRANDS[brand_name]
+
+          # Generate basic product info
+          part_number = generate_part_number(brand_info['prefix'], component_type)
+          name = random.choice(component_details['names'])
+
+          # Generate description with random but relevant terms
+          desc_terms = [
+              random.choice(['premium', 'high-efficiency', 'advanced', 'professional-grade']),
+              random.choice(['3000', '5000', '7500', '10000']),
+              random.choice(['sealed', 'precision', 'balanced', 'optimized']),
+              random.choice(['thermal', 'overload', 'surge', 'mechanical'])
+          ]
+          description = component_details['desc_template'].format(*desc_terms)
 
           # Create product
+          price = round(random.uniform(*component_details['price_range']), 2)
           product = await sync_to_async(Product.objects.create)(
-              part_number=part_data['part_number'],
-              name=part_data['name'],
-              description=part_data['description'],
-              appliance_type='DISHWASHER',
-              price=part_data['price'],
-              stock_quantity=random.randint(10, 50)
+              part_number=part_number,
+              name=f"{brand_name} {name}",
+              description=description,
+              appliance_type='REFRIGERATOR' if is_refrigerator else 'DISHWASHER',
+              price=price,
+              stock_quantity=random.randint(5, 100)
           )
 
           if not options['no_embeddings']:
@@ -199,59 +188,33 @@ For technical support: 1-800-PARTSELECT
             )
 
           # Create installation guide
-          guide_content = f"""Installation Guide for {product.part_number} {product.name}
-
-Safety First:\n
-- Disconnect power\n
-- Shut off water supply if applicable\n
-- Read all instructions\n
-
-Tools Required:\n
-- Screwdriver set\n
-- Adjustable wrench\n
-- Work gloves\n
-
-Installation Steps:\n
-1. Preparation\n
-   - Remove access panels\n
-   - Document wire connections\n
-   - Take photos for reference\n
-
-2. Installation\n
-   - Follow model-specific instructions\n
-   - Verify connections\n
-   - Secure all components\n
-
-3. Testing\n
-   - Restore power\n
-   - Run test cycle\n
-   - Check for proper operation\n
-
-For installation support: 1-800-PARTSELECT"""
-
+          guide_content = generate_installation_guide(product, component_type)
           await sync_to_async(InstallationGuide.objects.create)(
               product=product,
               content=guide_content
           )
 
-          # Create compatibility entries
-          for model in random.sample(dishwasher_models, 3):
+          # Create compatibility entries (3-5 compatible models)
+          for _ in range(random.randint(3, 5)):
+            model_number = generate_model_number(brand_info['models_prefix'])
             await sync_to_async(ModelCompatibility.objects.create)(
                 product=product,
-                model_number=model,
-                brand='Whirlpool' if model.startswith('W') else 'Maytag',
-                notes=f'Compatible with {model}'
+                model_number=model_number,
+                brand=brand_name,
+                notes=f'Compatible with {model_number} series'
             )
+
+          self.stdout.write(f'Created product {i + 1}/{count}: {part_number}')
 
       except Exception as e:
         self.stdout.write(self.style.ERROR(f'Error: {str(e)}'))
         raise e
 
     # Run the async function
-    asyncio.run(reset_and_load())
+    asyncio.run(generate_products(options['count']))
 
     # Print summary
-    self.stdout.write(self.style.SUCCESS('\nData load completed!'))
+    self.stdout.write(self.style.SUCCESS('\nData generation completed!'))
     self.stdout.write(f'Products: {Product.objects.count()}')
     self.stdout.write(f'Embeddings: {ProductDocument.objects.count()}')
     self.stdout.write(f'Installation Guides: {InstallationGuide.objects.count()}')

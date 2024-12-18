@@ -60,7 +60,7 @@ class Product(models.Model):
 
   class Meta:
     indexes = [
-        models.Index(fields=['part_number']),  # B-tree index for fast lookups
+        models.Index(fields=['part_number']),
     ]
 
   part_number = models.CharField(max_length=50, unique=True, db_index=True)
