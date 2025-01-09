@@ -1,14 +1,34 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import ReactMarkdown from 'react-markdown';
 
-const Chat = () => {
+const Chat = ({ currentUrl }) => {
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
+  const messagesEndRef = useRef(null);
+  const navigate = useNavigate();
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const handleLinkClick = (e) => {
+    const href = e.target.getAttribute('href');
+    if (href && (href.startsWith('/parts/') || href.startsWith('/installation-guides/'))) {
+      e.preventDefault();
+      navigate(href);
+    }
+  };
 
   const sendMessage = async () => {
     if (inputValue.trim() === '') return;
 
-    // Add user message to the chat
-    setMessages((prevMessages) => [...prevMessages, { sender: 'user', content: inputValue }]);
+    // Add user message to chat
+    setMessages(prev => [...prev, { sender: 'user', content: inputValue }]);
     setInputValue('');
 
     try {
@@ -17,7 +37,10 @@ const Chat = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ message: inputValue }),
+        body: JSON.stringify({ 
+          message: inputValue,
+          currentUrl: currentUrl
+        }),
       });
 
       if (!response.ok) {
@@ -25,35 +48,66 @@ const Chat = () => {
       }
 
       const data = await response.json();
-      // Add bot response to the chat
-      setMessages((prevMessages) => [...prevMessages, { sender: 'bot', content: data.response }]);
+      
+      // Add bot response to chat
+      setMessages(prev => [...prev, { 
+        sender: 'bot', 
+        content: data.response,
+        context: data.context
+      }]);
 
-      // Clear input field
     } catch (error) {
-      console.error('Error sending message:', error);
-      setMessages((prevMessages) => [...prevMessages, { sender: 'bot', content: 'An error occurred. Please try again.' }]);
+      console.error('Error:', error);
+      setMessages(prev => [...prev, { 
+        sender: 'bot', 
+        content: 'An error occurred. Please try again.' 
+      }]);
     }
   };
 
   return (
-    <div style={{ padding: '20px', maxWidth: '600px', margin: '0 auto' }}>
-      <h1>PartSelect Chat</h1>
-      <div style={{ marginBottom: '20px', height: '400px', overflowY: 'scroll', border: '1px solid #ccc', padding: '10px' }}>
+    <div className="h-full flex flex-col">
+      <div className="flex-grow overflow-auto p-4 space-y-4">
         {messages.map((msg, index) => (
-          <div key={index} style={{ marginBottom: '10px', textAlign: msg.sender === 'user' ? 'right' : 'left' }}>
-            <strong>{msg.sender === 'user' ? 'You:' : 'Bot:'}</strong> {msg.content}
+          <div 
+            key={index} 
+            className={`p-2 rounded-lg ${
+              msg.sender === 'user' 
+                ? 'bg-blue-100 ml-auto' 
+                : 'bg-gray-100'
+            } max-w-[80%]`}
+          >
+            <div className="font-semibold mb-1">
+              {msg.sender === 'user' ? 'You:' : 'Assistant:'}
+            </div>
+            <div 
+              onClick={handleLinkClick} 
+              className="prose max-w-none"
+            >
+              <ReactMarkdown>{msg.content}</ReactMarkdown>
+            </div>
           </div>
         ))}
+        <div ref={messagesEndRef} />
       </div>
-      <div>
-        <input
-          type="text"
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-          style={{ width: '80%', padding: '10px', marginRight: '10px' }}
-        />
-        <button onClick={sendMessage} style={{ padding: '10px 20px' }}>Send</button>
+
+      <div className="p-4 border-t">
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+            className="flex-grow p-2 border rounded"
+            placeholder="Type your message..."
+          />
+          <button
+            onClick={sendMessage}
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Send
+          </button>
+        </div>
       </div>
     </div>
   );

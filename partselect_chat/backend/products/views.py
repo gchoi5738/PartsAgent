@@ -93,22 +93,34 @@ class InstallationGuideView(views.APIView):
 
   def get(self, request, part_number, *args, **kwargs):
     try:
-      get_guide_sync = async_to_sync(self.product_service.get_installation_guide)
-      guide = get_guide_sync(part_number)
+      print(f"Fetching installation guide for part number: {part_number}")
+      guide_data = async_to_sync(self.product_service.get_installation_guide)(part_number)
 
-      if guide:
-        serializer = InstallationGuideSerializer(guide)
-        return Response(serializer.data)
-      return Response(
-          {'error': 'No installation guide found'},
-          status=status.HTTP_404_NOT_FOUND
-      )
+      if not guide_data:
+        return Response(
+            {'error': 'No installation guide found for this part'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+      # Get the actual InstallationGuide object
+      product = Product.objects.get(part_number=part_number)
+      guide = InstallationGuide.objects.get(product=product)
+
+      serializer = InstallationGuideSerializer(guide)
+      return Response(serializer.data)
+
     except Product.DoesNotExist:
       return Response(
           {'error': 'Product not found'},
           status=status.HTTP_404_NOT_FOUND
       )
+    except InstallationGuide.DoesNotExist:
+      return Response(
+          {'error': 'Installation guide not found'},
+          status=status.HTTP_404_NOT_FOUND
+      )
     except Exception as e:
+      print(f"Error in InstallationGuideView: {str(e)}")
       return Response(
           {'error': str(e)},
           status=status.HTTP_500_INTERNAL_SERVER_ERROR

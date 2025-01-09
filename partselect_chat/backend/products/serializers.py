@@ -13,11 +13,11 @@ class ProductSerializer(serializers.ModelSerializer):
 
 
 class InstallationGuideSerializer(serializers.ModelSerializer):
-  product_details = ProductSerializer(source='product', read_only=True)
+  product = ProductSerializer(read_only=True)  # Nested serializer for product
 
   class Meta:
     model = InstallationGuide
-    fields = ['id', 'product', 'product_details', 'content', 'created_at', 'updated_at']
+    fields = ['id', 'content', 'product']
 
 
 class ModelCompatibilitySerializer(serializers.ModelSerializer):

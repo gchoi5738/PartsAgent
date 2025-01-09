@@ -162,3 +162,33 @@ class ProductService:
           'product_details': None,
           'compatibility_info': None
       }
+
+  async def get_installation_guide(self, part_number: str) -> Dict:
+    """Get installation guide for a product"""
+    try:
+      # First find the product
+      product = await sync_to_async(Product.objects.filter(part_number=part_number).first)()
+
+      if not product:
+        return None
+
+      # Get the installation guide
+      guide = await sync_to_async(
+          InstallationGuide.objects.filter(product=product).first
+      )()
+
+      if not guide:
+        return None
+
+      return {
+          'content': guide.content,
+          'product': {
+              'name': product.name,
+              'part_number': product.part_number,
+              'description': product.description
+          }
+      }
+
+    except Exception as e:
+      print(f"Error getting installation guide: {str(e)}")
+      raise Exception(f"Error getting installation guide: {str(e)}")
