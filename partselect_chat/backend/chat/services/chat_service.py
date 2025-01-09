@@ -70,6 +70,8 @@ class ChatService:
                 Please ensure the routing is correct for the links, and follows this format. It should always
                 start with http://localhost:5173/ followed by the path to the /products, not /parts. 
                 
+                If any user requests deviates from PartSelect capabilities, please answer that you cannot
+                provide assistance for that request.
                 """)
       ]
 
