@@ -43,10 +43,6 @@ const InstallationGuide = () => {
           </div>
         </div>
 
-        {/* Chat Integration */}
-        <div className="h-full bg-white rounded-lg shadow">
-          <Chat currentUrl={location.pathname} />
-        </div>
       </div>
     </div>
   );

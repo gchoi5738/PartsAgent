@@ -67,6 +67,8 @@ class ChatService:
                 Format links as: 
                 [Product Name](http://localhost:5173/products/PART_NUMBER) or 
                 [Installation Guide](http://localhost:5173/products/PART_NUMBER/installation-guide)
+                Please ensure the routing is correct for the links, and follows this format. It should always
+                start with http://localhost:5173/ followed by the path to the /products, not /parts. 
                 
                 """)
       ]

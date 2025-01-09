@@ -27,7 +27,6 @@ const Chat = ({ currentUrl }) => {
   const sendMessage = async () => {
     if (inputValue.trim() === '') return;
 
-    // Add user message to chat
     setMessages(prev => [...prev, { sender: 'user', content: inputValue }]);
     setInputValue('');
 
@@ -49,7 +48,6 @@ const Chat = ({ currentUrl }) => {
 
       const data = await response.json();
       
-      // Add bot response to chat
       setMessages(prev => [...prev, { 
         sender: 'bot', 
         content: data.response,
@@ -67,6 +65,12 @@ const Chat = ({ currentUrl }) => {
 
   return (
     <div className="h-full flex flex-col">
+      {/* Added Chat Title */}
+      <div className="bg-blue-600 text-white p-4 shadow-md">
+        <h1 className="text-xl font-semibold">PartSelect Support Chat</h1>
+        <p className="text-sm text-blue-100">Ask me about parts, installation guides, or policies</p>
+      </div>
+
       <div className="flex-grow overflow-auto p-4 space-y-4">
         {messages.map((msg, index) => (
           <div 
